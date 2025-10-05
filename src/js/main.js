@@ -1,6 +1,8 @@
 import "../scss/styles.scss";
 import * as bootstrap from "bootstrap";
 
+const API_URL = "http://localhost:5000/tasks";
+
 let tasks = [];
 let currentFilter = "all";
 
@@ -18,43 +20,77 @@ const filterPendingButton = document.getElementById("filter-pending");
 const filterCompletedButton = document.getElementById("filter-completed");
 const progressBar = document.getElementById("progress-bar");
 
-addButton.addEventListener("click", handleClick);
+addButton.addEventListener("click", handleAddTask);
 taskOuterDiv.addEventListener("change", handleCheckbox);
-searchInput.addEventListener("keyup", handleSearch);
+searchInput.addEventListener("keyup", displayTasks);
 clearAllButton.addEventListener("click", handleClearAll);
 filterAllButton.addEventListener("click", () => setFilter("all"));
 filterPendingButton.addEventListener("click", () => setFilter("pending"));
 filterCompletedButton.addEventListener("click", () => setFilter("completed"));
+
+window.addEventListener("DOMContentLoaded", fetchTasks);
+
+async function fetchTasks() {
+	const res = await fetch(API_URL);
+	tasks = await res.json();
+	displayTasks();
+}
 
 function setFilter(filter) {
 	currentFilter = filter;
 	displayTasks();
 }
 
-function handleClearAll() {
-	tasks = [];
+async function handleAddTask() {
+	const title = taskInput.value.trim();
+	const priority = prioritySelect.value;
+
+	if (!title) {
+		new bootstrap.Modal(modalElement).show();
+		return;
+	}
+
+	const res = await fetch(API_URL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ title, priority }),
+	});
+
+	const newTask = await res.json();
+	tasks.push(newTask);
+	displayTasks();
+	taskInput.value = "";
+}
+
+async function handleCheckbox(e) {
+	if (!e.target.classList.contains("input-check")) return;
+
+	const id = e.target.dataset.id;
+	const task = tasks.find((t) => t.id === id);
+	if (!task) return;
+
+	task.isCompleted = e.target.checked;
+
+	await fetch(`${API_URL}/${id}`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ isCompleted: task.isCompleted }),
+	});
+
 	displayTasks();
 }
 
-function displayTasks() {
-	let filteredTasks = tasks;
+async function handleDelete(e) {
+	const id = e.currentTarget.dataset.id;
+	await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+	tasks = tasks.filter((t) => t.id !== id);
+	displayTasks();
+}
 
-	// Apply filter
-	if (currentFilter === "pending") {
-		filteredTasks = tasks.filter((task) => !task.completed);
-	} else if (currentFilter === "completed") {
-		filteredTasks = tasks.filter((task) => task.completed);
-	}
-
-	// Apply search
-	const searchTerm = searchInput.value.toLowerCase().trim();
-	if (searchTerm.length > 0) {
-		filteredTasks = filteredTasks.filter((task) =>
-			task.text.toLowerCase().includes(searchTerm)
-		);
-	}
-
-	renderTasks(filteredTasks);
+async function handleClearAll() {
+	await fetch(API_URL, { method: "DELETE" });
+	tasks = [];
+	displayTasks();
 }
 
 function renderTasks(tasksToRender) {
@@ -62,151 +98,105 @@ function renderTasks(tasksToRender) {
 
 	if (tasksToRender.length === 0) {
 		taskOuterDiv.innerHTML = `<p class="text-center text-muted">No tasks to show.</p>`;
-	} else {
-		tasksToRender.forEach((task) => {
-			const completedClass = task.completed ? "completed" : "";
-			taskOuterDiv.innerHTML += `
-        <div class="col task-div">
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <input type="checkbox" class="input-check me-3" data-id="${
-								task.id
-							}" ${task.completed ? "checked" : ""}>
-              <div class="flex-column">
-                <p class="task-name ${completedClass}" data-id="${task.id}">${
-				task.text
-			}</p>
-                <p class="text-muted" style="font-style: italic; margin-right:10px;">${
-									task.date
-								}</p>
-              </div>
-            </div>
-            <div class="d-flex align-items-center">
-              <span class="priority-tag priority-${task.priority.toLowerCase()}">${
-				task.priority
-			}</span>
-              <button class="btn-edit ms-2" data-id="${
-								task.id
-							}"><i class="fa fa-edit"></i></button>
-              <button class="btn-trash ms-2" data-id="${
-								task.id
-							}"><i class="fa fa-trash"></i></button>
-            </div>
-          </div>
-        </div>
-      `;
-		});
+		updateCounters();
+		return;
 	}
 
-	attachDeleteListeners();
-	attachEditListeners();
+	tasksToRender.forEach((task) => {
+		taskOuterDiv.innerHTML += `
+      <div class="col task-div">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <input type="checkbox" class="input-check me-3" data-id="${
+							task.id
+						}" ${task.isCompleted ? "checked" : ""}>
+            <div class="flex-column">
+              <p class="task-name ${
+								task.isCompleted ? "completed" : ""
+							}" data-id="${task.id}">${task.title}</p>
+              <p class="text-muted" style="font-style: italic;">Created: ${new Date(
+								task.createdAt
+							).toLocaleString()}</p>
+            </div>
+          </div>
+          <div class="d-flex align-items-center">
+            <span class="ms-2 priority-tag priority-${task.priority.toLowerCase()}">${
+			task.priority
+		}</span>
+            <button class="btn-edit ms-2" data-id="${
+							task.id
+						}"><i class="fa fa-edit"></i></button>
+            <button class="btn-trash ms-2" data-id="${
+							task.id
+						}"><i class="fa fa-trash"></i></button>
+          </div>
+        </div>
+      </div>
+    `;
+	});
+
+	document
+		.querySelectorAll(".btn-trash")
+		.forEach((btn) => btn.addEventListener("click", handleDelete));
+	document
+		.querySelectorAll(".btn-edit")
+		.forEach((btn) => btn.addEventListener("click", handleEdit));
+
 	updateCounters();
 }
 
+function displayTasks() {
+	let filtered = tasks;
+
+	if (currentFilter === "pending")
+		filtered = tasks.filter((t) => !t.isCompleted);
+	else if (currentFilter === "completed")
+		filtered = tasks.filter((t) => t.isCompleted);
+
+	const searchTerm = searchInput.value.toLowerCase().trim();
+	if (searchTerm)
+		filtered = filtered.filter((t) =>
+			t.title.toLowerCase().includes(searchTerm)
+		);
+
+	renderTasks(filtered);
+}
+
 function updateCounters() {
-	const completedTasks = tasks.filter((task) => task.completed).length;
-	const uncompletedTasks = tasks.length - completedTasks;
-
-	completedCounter.textContent = completedTasks;
-	uncompletedCounter.textContent = uncompletedTasks;
-
-	const progress = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
+	const completed = tasks.filter((t) => t.isCompleted).length;
+	completedCounter.textContent = completed;
+	uncompletedCounter.textContent = tasks.length - completed;
+	const progress = tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
 	progressBar.style.width = `${progress}%`;
 	progressBar.setAttribute("aria-valuenow", progress);
 }
 
-function handleCheckbox(event) {
-	if (event.target.classList.contains("input-check")) {
-		const id = event.target.dataset.id;
-		const task = tasks.find((t) => t.id == id);
-		task.completed = event.target.checked;
-		displayTasks();
-	}
+function handleEdit(e) {
+	const id = e.currentTarget.dataset.id;
+	const el = document.querySelector(`.task-name[data-id="${id}"]`);
+	el.contentEditable = true;
+	el.focus();
+	e.currentTarget.innerHTML = `<i class="fa fa-save"></i>`;
+	e.currentTarget.onclick = () => handleSave(e.currentTarget, id, el);
 }
 
-function attachDeleteListeners() {
-	document.querySelectorAll(".btn-trash").forEach((button) => {
-		button.addEventListener("click", handleDelete);
-	});
-}
-
-function attachEditListeners() {
-	document.querySelectorAll(".btn-edit").forEach((button) => {
-		button.addEventListener("click", handleEdit);
-	});
-}
-
-function handleSearch() {
-	displayTasks();
-}
-
-function handleEdit(event) {
-	const id = event.currentTarget.dataset.id;
-	const taskTextElement = document.querySelector(`.task-name[data-id="${id}"]`);
-
-	taskTextElement.contentEditable = true;
-	taskTextElement.focus();
-
-	const editButton = event.currentTarget;
-	editButton.innerHTML = `<i class="fa fa-save"></i>`;
-	editButton.classList.remove("btn-edit");
-	editButton.classList.add("btn-save");
-
-	editButton.removeEventListener("click", handleEdit);
-	editButton.addEventListener("click", handleSave);
-}
-
-function handleSave(event) {
-	const id = event.currentTarget.dataset.id;
-	const taskTextElement = document.querySelector(`.task-name[data-id="${id}"]`);
-	const newText = taskTextElement.textContent.trim();
-
-	if (newText.length === 0) {
-		const myModal = new bootstrap.Modal(modalElement);
-		myModal.show();
-		taskTextElement.focus();
-		return;
-	}
-	const task = tasks.find((t) => t.id == id);
-	task.text = newText;
-	taskTextElement.contentEditable = false;
-
-	const saveButton = event.currentTarget;
-	saveButton.innerHTML = `<i class="fa fa-edit"></i>`;
-	saveButton.classList.remove("btn-save");
-	saveButton.classList.add("btn-edit");
-
-	displayTasks();
-}
-
-function handleDelete(event) {
-	const id = event.currentTarget.dataset.id;
-	tasks = tasks.filter((t) => t.id != id);
-	displayTasks();
-}
-
-function handleClick() {
-	const newTaskText = taskInput.value.trim();
-
-	if (newTaskText.length === 0) {
-		const myModal = new bootstrap.Modal(modalElement);
-		myModal.show();
+async function handleSave(btn, id, el) {
+	const newTitle = el.textContent.trim();
+	if (!newTitle) {
+		new bootstrap.Modal(modalElement).show();
 		return;
 	}
 
-	const newTask = {
-		id: Date.now(),
-		text: newTaskText,
-		date: new Date().toDateString(),
-		completed: false,
-		priority: prioritySelect.options[prioritySelect.selectedIndex].text,
-	};
+	const res = await fetch(`${API_URL}/${id}`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ title: newTitle }),
+	});
 
-	tasks.push(newTask);
+	const updatedTask = await res.json();
+	tasks = tasks.map((t) => (t.id === id ? updatedTask : t));
+	el.contentEditable = false;
+	btn.innerHTML = `<i class="fa fa-edit"></i>`;
+	btn.onclick = handleEdit;
 	displayTasks();
-	taskInput.value = "";
-
-	setTimeout(() => {
-		taskOuterDiv.lastElementChild?.scrollIntoView({ behavior: "smooth" });
-	}, 100);
 }
