@@ -1,124 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Todo App</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
-    />
-  </head>
-  <body>
-    <div
-      class="container-md py-4 px-3 mx-auto my-5 d-flex justify-content-center outer-container"
-    >
-      <div class="row row-cols-1">
-        <h1 class="text-center hero-heading">TODO LIST</h1>
-        <div
-          class="d-flex gap-1 flex-column flex-sm-row align-items-center mb-4"
-        >
-          <div
-            class="col col-12 col-sm-8 mb-0 justify-content-center input-div"
-          >
-            <input
-              class="w-100 h-100 task-input"
-              id="task-input"
-              placeholder="Add Task"
-            />
-          </div>
-          <div class="col col-12 col-sm-4 container-fluid">
-            <div class="row">
-              <div class="col col-6 p-0">
-                <button class="w-100 btn-add" id="add-task">
-                  <i class="fa fa-plus"></i>
-                </button>
-              </div>
-              <div class="col col-6 p-0">
-                <button class="w-100 btn-clear" id="clear-task">
-                  <i class="fa fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h2 class="text-center task-list-heading">Task List</h2>
-        <div class="col-12 mb-4">
-          <input
-            type="text"
-            id="search-input"
-            class="form-control"
-            placeholder="Search tasks..."
-          />
-        </div>
-        <div id="task-outer-div">
-          <div class="col task-div">
-            <div class="d-flex justify-content-between">
-              <div
-                class="col-7 d-flex justify-content-around justify-content-sm-start todo-list-body"
-              >
-                <input type="checkbox" class="input-check" data-index="0" />
-                <div class="flex-column ms-sm-2">
-                  <p class="task-name" data-index="0">Something</p>
-                  <p
-                    class="text-muted"
-                    style="font-style: italic"
-                    id="set-date"
-                  >
-                    Someday
-                  </p>
-                </div>
-              </div>
-              <button class="col-2 btn-edit" data-index="0">
-                <i class="fa fa-edit"></i>
-              </button>
-              <button class="col-2 btn-trash" data-index="0">
-                <i class="fa fa-trash"></i>
-              </button>
-            </div>
-            <hr />
-          </div>
-        </div>
-        <div class="container d-flex justify-content-center">
-          <div id="task-counters text-center">
-            Completed: <span id="completed-counter">0</span> | Incomplete:
-            <span id="uncompleted-counter">0</span>
-          </div>
-        </div>
-      </div>
-    </div>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Todo App</title>
+		<link rel="stylesheet" href="./scss/styles.scss" />
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+	</head>
+	<body>
+		<div class="todo-wrapper container-md mx-auto my-5 p-4 rounded shadow-lg">
+			<h1 class="text-center fw-bold mb-4">My Tasks</h1>
 
-    <div
-      class="modal fade"
-      id="exampleModal"
-      tabindex="-1"
-      aria-labelledby="exampleModalLabel"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="exampleModalLabel">Error</h1>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">Please Enter A Task!</div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <script type="module" src="./js/main.js"></script>
-  </body>
+			<!-- Add Task Section -->
+			<div class="add-task-section mb-4">
+				<div class="d-flex flex-column flex-sm-row gap-2 align-items-center">
+					<input
+						type="text"
+						id="task-input"
+						class="form-control task-input flex-grow-1"
+						placeholder="What do you want to do today?" />
+
+					<select id="priority-select" class="form-select priority-select">
+						<option value="low">Low Priority</option>
+						<option value="medium">Medium Priority</option>
+						<option value="high">High Priority</option>
+					</select>
+
+					<button id="add-task" class="btn btn-success btn-add">Add</button>
+				</div>
+			</div>
+
+			<!-- Search + Filters -->
+			<div
+				class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 mb-4">
+				<input
+					type="text"
+					id="search-input"
+					class="form-control w-100 w-md-50 search-input"
+					placeholder="🔍 Search your tasks..." />
+				<div class="btn-group filter-buttons">
+					<button class="btn btn-outline-secondary" id="filter-all">All</button>
+					<button class="btn btn-outline-secondary" id="filter-pending">
+						Pending
+					</button>
+					<button class="btn btn-outline-secondary" id="filter-completed">
+						Completed
+					</button>
+					<button class="btn btn-outline-danger" id="clear-all-tasks">
+						Clear All
+					</button>
+				</div>
+			</div>
+
+			<!-- Progress Bar -->
+			<div class="progress rounded-pill mb-4">
+				<div
+					id="progress-bar"
+					class="progress-bar bg-success"
+					role="progressbar"
+					style="width: 0%"
+					aria-valuenow="0"
+					aria-valuemin="0"
+					aria-valuemax="100"></div>
+			</div>
+
+			<!-- Task List -->
+			<h4 class="fw-semibold mb-3">Tasks</h4>
+			<div id="task-outer-div" class="task-list"></div>
+
+			<!-- Counters -->
+			<div class="text-center mt-3">
+				<span class="badge bg-success me-2"
+					>Completed: <span id="completed-counter">0</span></span
+				>
+				<span class="badge bg-warning text-dark"
+					>Pending: <span id="uncompleted-counter">0</span></span
+				>
+			</div>
+		</div>
+
+		<!-- Modal -->
+		<div
+			class="modal fade"
+			id="exampleModal"
+			tabindex="-1"
+			aria-labelledby="exampleModalLabel"
+			aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLabel">Error</h5>
+						<button
+							type="button"
+							class="btn-close"
+							data-bs-dismiss="modal"
+							aria-label="Close"></button>
+					</div>
+					<div class="modal-body">Please enter a valid task.</div>
+					<div class="modal-footer">
+						<button
+							type="button"
+							class="btn btn-secondary"
+							data-bs-dismiss="modal">
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script type="module" src="./js/main.js"></script>
+	</body>
 </html>
