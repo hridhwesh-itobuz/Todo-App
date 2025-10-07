@@ -73,19 +73,24 @@
         class="d-flex justify-content-between align-items-center heading-container"
       >
         <h4 class="fw-semibold mb-3">Tasks</h4>
-        <div class="btn-group filter-buttons search-filter">
-          <button class="btn btn-filter-all" id="priority-filter-all">
-            All
-          </button>
-          <button class="btn btn-filter-low" id="filter-low">Low</button>
-          <button class="btn btn-filter-medium" id="filter-medium">
-            Medium
-          </button>
-          <button class="btn btn-filter-high" id="filter-high">High</button>
-        </div>
+
         <button class="btn btn-outline-danger" id="clear-all-tasks">
           Clear All
         </button>
+      </div>
+      <div
+        class="container filter-buttons search-filter d-flex justify-content-center"
+      >
+        <div class="row-cols-10 g-0">
+          <button class="btn btn-filter-all m-0" id="priority-filter-all">
+            All
+          </button>
+          <button class="btn btn-filter-low m-0" id="filter-low">Low</button>
+          <button class="btn btn-filter-medium m-0" id="filter-medium">
+            Medium
+          </button>
+          <button class="btn btn-filter-high m-0" id="filter-high">High</button>
+        </div>
       </div>
 
       <div id="task-outer-div" class="task-list"></div>

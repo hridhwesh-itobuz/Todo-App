@@ -268,11 +268,11 @@ h1 {
 .search-filter {
   margin-bottom: 5px;
 }
-@media (max-width: 340px) {
-  .btn-filter-all {
-    width: 100%;
-  }
-}
+// @media (max-width: 340px) {
+//   .btn-filter-all {
+//     width: 100%;
+//   }
+// }
 
 .priority-medium {
   background-color: var(--warning-color);
