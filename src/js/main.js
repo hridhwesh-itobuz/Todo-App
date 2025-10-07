@@ -1,7 +1,10 @@
 import "../scss/styles.scss";
 import * as bootstrap from "bootstrap";
 
+const API_URL = "http://localhost:5000/tasks";
+
 let tasks = [];
+let currentFilter = "all";
 
 const taskInput = document.getElementById("task-input");
 const taskOuterDiv = document.getElementById("task-outer-div");
@@ -10,172 +13,190 @@ const completedCounter = document.getElementById("completed-counter");
 const uncompletedCounter = document.getElementById("uncompleted-counter");
 const searchInput = document.getElementById("search-input");
 const modalElement = document.getElementById("exampleModal");
-
-addButton.addEventListener("click", handleClick);
-taskOuterDiv.addEventListener("change", handleCheckbox);
-searchInput.addEventListener("keyup", handleSearch);
-document.addEventListener("DOMContentLoaded", renderTasks);
 const clearAllButton = document.getElementById("clear-all-tasks");
+const prioritySelect = document.getElementById("priority-select");
+const filterAllButton = document.getElementById("filter-all");
+const filterPendingButton = document.getElementById("filter-pending");
+const filterCompletedButton = document.getElementById("filter-completed");
+const progressBar = document.getElementById("progress-bar");
+
+addButton.addEventListener("click", handleAddTask);
+taskOuterDiv.addEventListener("change", handleCheckbox);
+searchInput.addEventListener("keyup", displayTasks);
 clearAllButton.addEventListener("click", handleClearAll);
+filterAllButton.addEventListener("click", () => setFilter("all"));
+filterPendingButton.addEventListener("click", () => setFilter("pending"));
+filterCompletedButton.addEventListener("click", () => setFilter("completed"));
 
-function handleClearAll() {
-  tasks = [];
+window.addEventListener("DOMContentLoaded", fetchTasks);
 
-  renderTasks();
+async function fetchTasks() {
+	const res = await fetch(API_URL);
+	tasks = await res.json();
+	displayTasks();
 }
-function renderTasks(tasksToRender = tasks) {
-  //taskOuterDiv.innerHTML = "";
 
-  tasksToRender.forEach((task) => {
-    const completedClass = task.completed ? "completed" : "";
+function setFilter(filter) {
+	currentFilter = filter;
+	displayTasks();
+}
 
-    const originalIndex = tasks.indexOf(task);
+async function handleAddTask() {
+	const title = taskInput.value.trim();
+	const priority = prioritySelect.value;
 
-    taskOuterDiv.innerHTML += `
+	if (!title) {
+		new bootstrap.Modal(modalElement).show();
+		return;
+	}
+
+	const res = await fetch(API_URL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ title, priority }),
+	});
+
+	const newTask = await res.json();
+	tasks.push(newTask);
+	displayTasks();
+	taskInput.value = "";
+}
+
+async function handleCheckbox(e) {
+	if (!e.target.classList.contains("input-check")) return;
+
+	const id = e.target.dataset.id;
+	const task = tasks.find((t) => t.id === id);
+	if (!task) return;
+
+	task.isCompleted = e.target.checked;
+
+	await fetch(`${API_URL}/${id}`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ isCompleted: task.isCompleted }),
+	});
+
+	displayTasks();
+}
+
+async function handleDelete(e) {
+	const id = e.currentTarget.dataset.id;
+	await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+	tasks = tasks.filter((t) => t.id !== id);
+	displayTasks();
+}
+
+async function handleClearAll() {
+	await fetch(API_URL, { method: "DELETE" });
+	tasks = [];
+	displayTasks();
+}
+
+function renderTasks(tasksToRender) {
+	taskOuterDiv.innerHTML = "";
+
+	if (tasksToRender.length === 0) {
+		taskOuterDiv.innerHTML = `<p class="text-center text-muted">No tasks to show.</p>`;
+		updateCounters();
+		return;
+	}
+
+	tasksToRender.forEach((task) => {
+		taskOuterDiv.innerHTML += `
       <div class="col task-div">
-        <div class="d-flex justify-content-between">
-          <div class="col-7 d-flex justify-content-around justify-content-sm-start todo-list-body">
-           <input type="checkbox" class="input-check" data-index="${originalIndex}" ${
-      task.completed ? "checked" : ""
-    }>
-           <div class="flex-column ms-sm-2">
-            <p class="task-name ${completedClass}" data-index="${originalIndex}">
-                ${task.text}
-            </p>
-            <p
-              class="text-muted"
-              style="font-style: italic"
-              id="set-date"
-            >${task.date}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <input type="checkbox" class="input-check me-3" data-id="${
+							task.id
+						}" ${task.isCompleted ? "checked" : ""}>
+            <div class="flex-column">
+              <p class="task-name ${
+								task.isCompleted ? "completed" : ""
+							}" data-id="${task.id}">${task.title}</p>
+              <p class="text-muted" style="font-style: italic;">Created: ${new Date(
+								task.createdAt
+							).toLocaleString()}</p>
             </div>
           </div>
-          <button class="col-2 btn-edit" data-index="${originalIndex}">
-            <i class="fa fa-edit"></i>
-          </button>
-          <button class="col-2 btn-trash" data-index="${originalIndex}">
-            <i class="fa fa-trash"></i>
-          </button>
+          <div class="d-flex align-items-center">
+            <span class="ms-2 priority-tag priority-${task.priority.toLowerCase()}">${
+			task.priority
+		}</span>
+            <button class="btn-edit ms-2" data-id="${
+							task.id
+						}"><i class="fa fa-edit"></i></button>
+            <button class="btn-trash ms-2" data-id="${
+							task.id
+						}"><i class="fa fa-trash"></i></button>
+          </div>
         </div>
-        <hr />
       </div>
     `;
-  });
+	});
 
-  attachDeleteListeners();
-  attachEditListeners();
-  updateCounters();
+	document
+		.querySelectorAll(".btn-trash")
+		.forEach((btn) => btn.addEventListener("click", handleDelete));
+	document
+		.querySelectorAll(".btn-edit")
+		.forEach((btn) => btn.addEventListener("click", handleEdit));
+
+	updateCounters();
+}
+
+function displayTasks() {
+	let filtered = tasks;
+
+	if (currentFilter === "pending")
+		filtered = tasks.filter((t) => !t.isCompleted);
+	else if (currentFilter === "completed")
+		filtered = tasks.filter((t) => t.isCompleted);
+
+	const searchTerm = searchInput.value.toLowerCase().trim();
+	if (searchTerm)
+		filtered = filtered.filter((t) =>
+			t.title.toLowerCase().includes(searchTerm)
+		);
+
+	renderTasks(filtered);
 }
 
 function updateCounters() {
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const uncompletedTasks = tasks.length - completedTasks;
-
-  completedCounter.textContent = completedTasks;
-  uncompletedCounter.textContent = uncompletedTasks;
+	const completed = tasks.filter((t) => t.isCompleted).length;
+	completedCounter.textContent = completed;
+	uncompletedCounter.textContent = tasks.length - completed;
+	const progress = tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
+	progressBar.style.width = `${progress}%`;
+	progressBar.setAttribute("aria-valuenow", progress);
 }
 
-function handleCheckbox(event) {
-  if (event.target.classList.contains("input-check")) {
-    const index = event.target.dataset.index;
-    const taskNameElement = document.querySelector(
-      `.task-name[data-index="${index}"]`
-    );
-
-    taskNameElement.classList.toggle("completed");
-    tasks[index].completed = event.target.checked;
-    updateCounters();
-  }
+function handleEdit(e) {
+	const id = e.currentTarget.dataset.id;
+	const el = document.querySelector(`.task-name[data-id="${id}"]`);
+	el.contentEditable = true;
+	el.focus();
+	e.currentTarget.innerHTML = `<i class="fa fa-save"></i>`;
+	e.currentTarget.onclick = () => handleSave(e.currentTarget, id, el);
 }
 
-function attachDeleteListeners() {
-  document.querySelectorAll(".btn-trash").forEach((button) => {
-    button.addEventListener("click", handleDelete);
-  });
-}
+async function handleSave(btn, id, el) {
+	const newTitle = el.textContent.trim();
+	if (!newTitle) {
+		new bootstrap.Modal(modalElement).show();
+		return;
+	}
 
-function attachEditListeners() {
-  document.querySelectorAll(".btn-edit").forEach((button) => {
-    button.addEventListener("click", handleEdit);
-  });
-}
+	const res = await fetch(`${API_URL}/${id}`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ title: newTitle }),
+	});
 
-function handleSearch(event) {
-  const searchTerm = event.target.value.toLowerCase().trim();
-  let filteredTasks = tasks;
-
-  if (searchTerm.length > 0) {
-    filteredTasks = tasks.filter((task) =>
-      task.text.toLowerCase().includes(searchTerm)
-    );
-  }
-  renderTasks(filteredTasks);
-}
-
-function handleEdit(event) {
-  const index = event.currentTarget.dataset.index;
-  const taskTextElement = document.querySelector(
-    `.task-name[data-index="${index}"]`
-  );
-
-  taskTextElement.contentEditable = true;
-  taskTextElement.focus();
-
-  const editButton = event.currentTarget;
-  editButton.innerHTML = `<i class="fa fa-save"></i>`;
-  editButton.classList.remove("btn-edit");
-  editButton.classList.add("btn-save");
-
-  editButton.removeEventListener("click", handleEdit);
-  editButton.addEventListener("click", handleSave);
-}
-
-function handleSave(event) {
-  const index = event.currentTarget.dataset.index;
-  const taskTextElement = document.querySelector(
-    `.task-name[data-index="${index}"]`
-  );
-  const newText = taskTextElement.textContent.trim();
-
-  if (newText.length === 0) {
-    const myModal = new bootstrap.Modal(modalElement);
-    myModal.show();
-    taskTextElement.focus();
-    return;
-  }
-  tasks[index].text = newText;
-
-  taskTextElement.contentEditable = false;
-
-  const saveButton = event.currentTarget;
-  saveButton.innerHTML = `<i class="fa fa-edit"></i>`;
-  saveButton.classList.remove("btn-save");
-  saveButton.classList.add("btn-edit");
-
-  renderTasks();
-}
-
-function handleDelete(event) {
-  const index = event.currentTarget.dataset.index;
-  tasks.splice(index, 1);
-  renderTasks();
-}
-
-function handleClick() {
-  const newTaskText = taskInput.value.trim();
-
-  if (newTaskText.length === 0) {
-    const myModal = new bootstrap.Modal(modalElement);
-    myModal.show();
-    return;
-  }
-
-  const newTask = {
-    text: newTaskText,
-    date: new Date().toDateString(),
-    completed: false,
-  };
-
-  tasks.push(newTask);
-  renderTasks();
-  taskInput.value = "";
+	const updatedTask = await res.json();
+	tasks = tasks.map((t) => (t.id === id ? updatedTask : t));
+	el.contentEditable = false;
+	btn.innerHTML = `<i class="fa fa-edit"></i>`;
+	btn.onclick = handleEdit;
+	displayTasks();
 }
