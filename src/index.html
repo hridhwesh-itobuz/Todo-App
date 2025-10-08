@@ -47,8 +47,10 @@
           class="form-control w-100 w-md-50 search-input"
           placeholder="🔍 Search your tasks..."
         />
-        <div class="btn-group filter-buttons">
-          <button class="btn btn-outline-secondary" id="filter-all">All</button>
+        <div class="btn-group filter-buttons completed-btns">
+          <button class="btn btn-outline-secondary active" id="filter-all">
+            All
+          </button>
           <button class="btn btn-outline-secondary" id="filter-pending">
             Pending
           </button>
@@ -81,8 +83,11 @@
       <div
         class="container filter-buttons search-filter d-flex justify-content-center"
       >
-        <div class="row-cols-10 g-0">
-          <button class="btn btn-filter-all m-0" id="priority-filter-all">
+        <div class="row-cols-10 g-0 priority-filter">
+          <button
+            class="btn btn-filter-all m-0 active"
+            id="priority-filter-all"
+          >
             All
           </button>
           <button class="btn btn-filter-low m-0" id="filter-low">Low</button>

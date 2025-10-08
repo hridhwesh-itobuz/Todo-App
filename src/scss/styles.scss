@@ -131,6 +131,36 @@ h1 {
     transform: translateY(-1px);
     box-shadow: var(--shadow-hover);
   }
+  &.active {
+    color: white;
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    box-shadow: var(--shadow-hover);
+  }
+}
+.priority-filter .btn-filter-all {
+  &.active {
+    border: none;
+    background-color: var(--secondary-color);
+  }
+}
+.priority-filter .btn-filter-low {
+  &.active {
+    border: none;
+    background-color: var(--success-color);
+  }
+}
+.priority-filter .btn-filter-medium {
+  &.active {
+    border: none;
+    background-color: var(--warning-color);
+  }
+}
+.priority-filter .btn-filter-high {
+  &.active {
+    border: none;
+    background-color: var(--danger-color);
+  }
 }
 .heading-container {
   padding: 5px 0px 5px 0px;
@@ -200,6 +230,19 @@ h1 {
   font-size: 0.9rem;
 }
 
+@media (max-width: 576px) {
+  .search-filter {
+    padding: 0px;
+  }
+  .btn-filter-all,
+  .btn-filter-low,
+  .btn-filter-medium,
+  .btn-filter-high {
+    font-size: 16px;
+    padding: 10px !important;
+  }
+}
+
 .btn-edit,
 .btn-trash {
   border: none;
@@ -257,19 +300,22 @@ h1 {
   background-color: var(--success-color);
 }
 .btn-filter-all {
-  &:hover {
+  &:hover,
+  .active {
     background-color: var(--primary-color) !important;
     color: white;
   }
 }
 .btn-filter-low {
-  &:hover {
+  &:hover,
+  .active {
     background-color: var(--success-color) !important;
     color: white;
   }
 }
 .btn-filter-medium {
-  &:hover {
+  &:hover,
+  .active {
     background-color: var(--warning-color) !important;
     color: white;
   }
@@ -280,6 +326,10 @@ h1 {
     color: white;
   }
 }
+// .btn-filter-high .active {
+//   background-color: var(--danger-color) !important;
+//   color: white;
+// }
 
 .search-filter {
   margin-bottom: 5px;

@@ -25,6 +25,8 @@ const filterHighButton = document.getElementById("filter-high");
 const filterPendingButton = document.getElementById("filter-pending");
 const filterCompletedButton = document.getElementById("filter-completed");
 const progressBar = document.getElementById("progress-bar");
+const filterBtnContainer = document.querySelector(".filter-buttons");
+const priorityFtrBtnContainer = document.querySelector(".priority-filter");
 
 addButton.addEventListener("click", handleAddTask);
 taskOuterDiv.addEventListener("change", handleCheckbox);
@@ -56,6 +58,36 @@ filterHighButton.addEventListener("click", () =>
 window.addEventListener("DOMContentLoaded", () =>
   fetchTasks(currentFilter, priorityFilter)
 );
+
+filterBtnContainer.addEventListener("click", (event) => {
+  const clickedButton = event.target.closest(".btn-outline-secondary");
+
+  if (clickedButton) {
+    const currentActive = filterBtnContainer.querySelector(
+      ".btn-outline-secondary.active"
+    );
+
+    if (currentActive) {
+      currentActive.classList.remove("active");
+    }
+
+    clickedButton.classList.add("active");
+  }
+});
+
+priorityFtrBtnContainer.addEventListener("click", (event) => {
+  const clickedButton = event.target.closest("button");
+
+  if (clickedButton) {
+    const currentActive = priorityFtrBtnContainer.querySelector(".active");
+
+    if (currentActive) {
+      currentActive.classList.remove("active");
+    }
+
+    clickedButton.classList.add("active");
+  }
+});
 
 async function fetchTasks(filter, priority) {
   const searchTerm = searchInput.value.toLowerCase().trim();
