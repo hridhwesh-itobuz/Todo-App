@@ -28,34 +28,59 @@ const progressBar = document.getElementById("progress-bar");
 
 addButton.addEventListener("click", handleAddTask);
 taskOuterDiv.addEventListener("change", handleCheckbox);
-searchInput.addEventListener("keyup", displayTasks);
-clearAllButton.addEventListener("click", handleClearAll);
-filterAllButton.addEventListener("click", () => setFilter("all"));
-filterPendingButton.addEventListener("click", () => setFilter("pending"));
-filterCompletedButton.addEventListener("click", () => setFilter("completed"));
-filterAllPriorityButton.addEventListener("click", () =>
-  setPriorityFilter("all")
+searchInput.addEventListener("keyup", () =>
+  fetchTasks(currentFilter, priorityFilter)
 );
-filterLowButton.addEventListener("click", () => setPriorityFilter("low"));
-filterMediumButton.addEventListener("click", () => setPriorityFilter("medium"));
-filterHighButton.addEventListener("click", () => setPriorityFilter("high"));
-window.addEventListener("DOMContentLoaded", fetchTasks);
+clearAllButton.addEventListener("click", handleClearAll);
+filterAllButton.addEventListener("click", () =>
+  setFilterAndPriority("all", priorityFilter)
+);
+filterPendingButton.addEventListener("click", () =>
+  setFilterAndPriority("pending", priorityFilter)
+);
+filterCompletedButton.addEventListener("click", () =>
+  setFilterAndPriority("completed", priorityFilter)
+);
+filterAllPriorityButton.addEventListener("click", () =>
+  setFilterAndPriority(currentFilter, "all")
+);
+filterLowButton.addEventListener("click", () =>
+  setFilterAndPriority(currentFilter, "low")
+);
+filterMediumButton.addEventListener("click", () =>
+  setFilterAndPriority(currentFilter, "medium")
+);
+filterHighButton.addEventListener("click", () =>
+  setFilterAndPriority(currentFilter, "high")
+);
+window.addEventListener("DOMContentLoaded", () =>
+  fetchTasks(currentFilter, priorityFilter)
+);
 
-async function fetchTasks() {
-  const res = await fetch(API_URL);
+async function fetchTasks(filter, priority) {
+  const searchTerm = searchInput.value.toLowerCase().trim();
+
+  const param1 = searchTerm;
+  const param2 = filter;
+  const param3 = priority;
+
+  const queryString = `?search=${encodeURIComponent(
+    param1
+  )}&status=${encodeURIComponent(param2)}&priority=${encodeURIComponent(
+    param3
+  )}`;
+  const finalUrl = API_URL + queryString;
+  console.log(finalUrl);
+  const res = await fetch(finalUrl);
   tasks = await res.json();
-  displayTasks();
+  renderTasks(tasks);
 }
 
-function setFilter(filter) {
+function setFilterAndPriority(filter, priority) {
   currentFilter = filter;
-  displayTasks();
+  priorityFilter = priority;
+  fetchTasks(currentFilter, priorityFilter);
 }
-function setPriorityFilter(filter) {
-  priorityFilter = filter;
-  displayTasks();
-}
-
 async function handleAddTask() {
   const title = taskInput.value.trim();
   const priority = prioritySelect.value;
@@ -78,7 +103,7 @@ async function handleAddTask() {
   const newTask = await res.json();
   tasks.push(newTask);
 
-  displayTasks();
+  fetchTasks(currentFilter, priorityFilter);
   taskInput.value = "";
   tagsInput.value = "";
 }
@@ -98,20 +123,20 @@ async function handleCheckbox(e) {
     body: JSON.stringify({ isCompleted: task.isCompleted }),
   });
 
-  displayTasks();
+  fetchTasks(currentFilter, priorityFilter);
 }
 
 async function handleDelete(e) {
   const id = e.currentTarget.dataset.id;
   await fetch(`${API_URL}/${id}`, { method: "DELETE" });
   tasks = tasks.filter((t) => t.id !== id);
-  displayTasks();
+  fetchTasks(currentFilter, priorityFilter);
 }
 
 async function handleClearAll() {
   await fetch(API_URL, { method: "DELETE" });
   tasks = [];
-  displayTasks();
+  fetchTasks(currentFilter, priorityFilter);
 }
 function renderTasks(tasksToRender) {
   taskOuterDiv.innerHTML = "";
@@ -125,7 +150,7 @@ function renderTasks(tasksToRender) {
   tasksToRender.forEach((task) => {
     taskOuterDiv.innerHTML += `
       <div class="col task-div" data-id="${task.id}">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center">
           <div class="d-flex align-items-center">
             <input type="checkbox" class="input-check me-3" data-id="${
               task.id
@@ -178,30 +203,30 @@ function renderTasks(tasksToRender) {
   updateCounters();
 }
 
-function displayTasks() {
-  let filtered = tasks;
+// function displayTasks() {
+//   let filtered = tasks;
 
-  if (currentFilter === "pending") {
-    filtered = filtered.filter((t) => !t.isCompleted);
-  } else if (currentFilter === "completed") {
-    filtered = filtered.filter((t) => t.isCompleted);
-  }
+//   if (currentFilter === "pending") {
+//     filtered = filtered.filter((t) => !t.isCompleted);
+//   } else if (currentFilter === "completed") {
+//     filtered = filtered.filter((t) => t.isCompleted);
+//   }
 
-  if (priorityFilter !== "all") {
-    filtered = filtered.filter(
-      (t) => t.priority.toLowerCase() === priorityFilter
-    );
-  }
+//   if (priorityFilter !== "all") {
+//     filtered = filtered.filter(
+//       (t) => t.priority.toLowerCase() === priorityFilter
+//     );
+//   }
 
-  const searchTerm = searchInput.value.toLowerCase().trim();
-  if (searchTerm) {
-    filtered = filtered.filter((t) =>
-      t.title.toLowerCase().includes(searchTerm)
-    );
-  }
+//   const searchTerm = searchInput.value.toLowerCase().trim();
+//   if (searchTerm) {
+//     filtered = filtered.filter((t) =>
+//       t.title.toLowerCase().includes(searchTerm)
+//     );
+//   }
 
-  renderTasks(filtered);
-}
+//   renderTasks(filtered);
+// }
 
 function updateCounters() {
   const completed = tasks.filter((t) => t.isCompleted).length;
@@ -284,5 +309,5 @@ async function handleSave(btn, id, taskElement) {
 
   btn.innerHTML = `<i class="fa fa-edit"></i>`;
   btn.onclick = handleEdit;
-  displayTasks();
+  fetchTasks(currentFilter, priorityFilter);
 }
