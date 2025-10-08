@@ -160,6 +160,9 @@ async function handleCheckbox(e) {
 
 async function handleDelete(e) {
   const id = e.currentTarget.dataset.id;
+  console.log(e.currentTarget);
+  console.log(e.currentTarget.dataset);
+  console.log(id);
   await fetch(`${API_URL}/${id}`, { method: "DELETE" });
   tasks = tasks.filter((t) => t.id !== id);
   fetchTasks(currentFilter, priorityFilter);
@@ -181,7 +184,7 @@ function renderTasks(tasksToRender) {
 
   tasksToRender.forEach((task) => {
     taskOuterDiv.innerHTML += `
-      <div class="col task-div" data-id="${task.id}">
+      <div class="col task-div" data-id="${task._id}">
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center">
           <div class="d-flex align-items-center">
             <input type="checkbox" class="input-check me-3" data-id="${
@@ -213,10 +216,10 @@ function renderTasks(tasksToRender) {
     }</span>
 
             <button class="btn-edit ms-2" data-id="${
-              task.id
+              task._id
             }"><i class="fa fa-edit"></i></button>
             <button class="btn-trash ms-2" data-id="${
-              task.id
+              task._id
             }"><i class="fa fa-trash"></i></button>
           </div>
 		     
