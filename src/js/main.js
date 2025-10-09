@@ -1,5 +1,8 @@
 import "../scss/styles.scss";
 import * as bootstrap from "bootstrap";
+import Subscriptions from "./subscriptions.js";
+
+const sub = new Subscriptions();
 
 const API_URL = "http://localhost:3000/tasks";
 
@@ -7,52 +10,34 @@ let tasks = [];
 let currentFilter = "all";
 let priorityFilter = "all";
 
-const taskInput = document.getElementById("task-input");
-const tagsInput = document.getElementById("tags-input");
-const taskOuterDiv = document.getElementById("task-outer-div");
-const addButton = document.getElementById("add-task");
-const completedCounter = document.getElementById("completed-counter");
-const uncompletedCounter = document.getElementById("uncompleted-counter");
-const searchInput = document.getElementById("search-input");
-const modalElement = document.getElementById("exampleModal");
-const clearAllButton = document.getElementById("clear-all-tasks");
-const prioritySelect = document.getElementById("priority-select");
-const filterAllButton = document.getElementById("filter-all");
-const filterAllPriorityButton = document.getElementById("priority-filter-all");
-const filterLowButton = document.getElementById("priority-filter-low");
-const filterMediumButton = document.getElementById("priority-filter-medium");
-const filterHighButton = document.getElementById("priority-filter-high");
-const filterPendingButton = document.getElementById("filter-pending");
-const filterCompletedButton = document.getElementById("filter-completed");
-const progressBar = document.getElementById("progress-bar");
 const filterBtnContainer = document.querySelector(".filter-buttons");
 const priorityFtrBtnContainer = document.querySelector(".priority-filter");
 
-addButton.addEventListener("click", handleAddTask);
-taskOuterDiv.addEventListener("change", handleCheckbox);
-searchInput.addEventListener("keyup", () =>
+sub.addButton.addEventListener("click", handleAddTask);
+sub.taskOuterDiv.addEventListener("change", handleCheckbox);
+sub.searchInput.addEventListener("keyup", () =>
   fetchTasks(currentFilter, priorityFilter)
 );
-clearAllButton.addEventListener("click", handleClearAll);
-filterAllButton.addEventListener("click", () =>
+sub.clearAllButton.addEventListener("click", handleClearAll);
+sub.filterAllButton.addEventListener("click", () =>
   setFilterAndPriority("all", priorityFilter)
 );
-filterPendingButton.addEventListener("click", () =>
+sub.filterPendingButton.addEventListener("click", () =>
   setFilterAndPriority("pending", priorityFilter)
 );
-filterCompletedButton.addEventListener("click", () =>
+sub.filterCompletedButton.addEventListener("click", () =>
   setFilterAndPriority("completed", priorityFilter)
 );
-filterAllPriorityButton.addEventListener("click", () =>
+sub.filterAllPriorityButton.addEventListener("click", () =>
   setFilterAndPriority(currentFilter, "all")
 );
-filterLowButton.addEventListener("click", () =>
+sub.filterLowButton.addEventListener("click", () =>
   setFilterAndPriority(currentFilter, "low")
 );
-filterMediumButton.addEventListener("click", () =>
+sub.filterMediumButton.addEventListener("click", () =>
   setFilterAndPriority(currentFilter, "medium")
 );
-filterHighButton.addEventListener("click", () =>
+sub.filterHighButton.addEventListener("click", () =>
   setFilterAndPriority(currentFilter, "high")
 );
 window.addEventListener("DOMContentLoaded", () =>
@@ -92,7 +77,7 @@ priorityFtrBtnContainer.addEventListener("click", (event) => {
 });
 
 async function fetchTasks(filter, priority) {
-  const searchTerm = searchInput.value.toLowerCase().trim();
+  const searchTerm = sub.searchInput.value.toLowerCase().trim();
 
   const param1 = searchTerm;
   const param2 = filter;
@@ -116,15 +101,15 @@ function setFilterAndPriority(filter, priority) {
   fetchTasks(currentFilter, priorityFilter);
 }
 async function handleAddTask() {
-  const title = taskInput.value.trim();
-  const priority = prioritySelect.value;
-  const tagsValue = tagsInput.value;
+  const title = sub.taskInput.value.trim();
+  const priority = sub.prioritySelect.value;
+  const tagsValue = sub.tagsInput.value;
   const tags = tagsValue
     ? tagsValue.split(/[\s,]+/).map((tag) => tag.trim().toLowerCase())
     : [];
 
-  if (!title) {
-    new bootstrap.Modal(modalElement).show();
+  if (!title || title.length < 3) {
+    new bootstrap.Modal(sub.modalElement).show();
     return;
   }
 
@@ -138,8 +123,8 @@ async function handleAddTask() {
   tasks.push(newTask);
 
   fetchTasks(currentFilter, priorityFilter);
-  taskInput.value = "";
-  tagsInput.value = "";
+  sub.taskInput.value = "";
+  sub.tagsInput.value = "";
 }
 
 async function handleCheckbox(e) {
@@ -178,16 +163,16 @@ async function handleClearAll() {
   fetchTasks(currentFilter, priorityFilter);
 }
 function renderTasks(tasksToRender) {
-  taskOuterDiv.innerHTML = "";
+  sub.taskOuterDiv.innerHTML = "";
 
   if (tasksToRender.length === 0) {
-    taskOuterDiv.innerHTML = `<p class="text-center text-muted">No tasks to show.</p>`;
+    sub.taskOuterDiv.innerHTML = `<p class="text-center text-muted">No tasks to show.</p>`;
     updateCounters();
     return;
   }
 
   tasksToRender.forEach((task) => {
-    taskOuterDiv.innerHTML += `
+    sub.taskOuterDiv.innerHTML += `
       <div class="col task-div" data-id="${task._id}">
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center">
           <div class="d-flex align-items-center">
@@ -205,16 +190,16 @@ function renderTasks(tasksToRender) {
           task.updatedAt
         ).toLocaleString()}</p>
 			   <div class="d-flex flex-wrap tags-container">
-            ${(task.tags ?? [])
+            ${task.tags
               .map(
                 (tag) =>
-                  `<span class="badge bg-info text-dark me-1" title="Tag: ${tag}">#${tag}</span>`
+                  `<span class="badge bg-info text-dark me-1 mb-1" title="Tag: ${tag}">#${tag}</span>`
               )
               .join("")}
           </div>
             </div>
           </div>
-          <div class="d-flex align-items-center">
+          <div class="d-flex align-items-center mt-1">
 <span class="ms-2 priority-tag priority-display priority-${task.priority.toLowerCase()}">${
       task.priority
     }</span>
@@ -244,12 +229,12 @@ function renderTasks(tasksToRender) {
 
 function updateCounters(data = tasks) {
   const completed = data.filter((t) => t.isCompleted).length;
-  completedCounter.textContent = completed;
-  uncompletedCounter.textContent = data.length - completed;
+  sub.completedCounter.textContent = completed;
+  sub.completedCounter.textContent = data.length - completed;
 
   const progress = data.length > 0 ? (completed / data.length) * 100 : 0;
-  progressBar.style.width = `${progress}%`;
-  progressBar.setAttribute("aria-valuenow", progress);
+  sub.progressBar.style.width = `${progress}%`;
+  sub.progressBar.setAttribute("aria-valuenow", progress);
 }
 async function handleEdit(e) {
   const id = e.currentTarget.dataset.id;
@@ -298,7 +283,6 @@ async function handleSave(btn, id, taskElement) {
     ".editable-priority-select"
   ).value;
   const newTagsValue = taskElement.querySelector(".editable-tags-input").value;
-
   const newTags = newTagsValue
     ? newTagsValue
         .split(/[\s,]+/)
@@ -306,8 +290,8 @@ async function handleSave(btn, id, taskElement) {
         .filter((tag) => tag.length > 0)
     : [];
 
-  if (!newTitle) {
-    new bootstrap.Modal(modalElement).show();
+  if (!newTitle || newTitle.length < 3) {
+    new bootstrap.Modal(sub.modalElement).show();
     return;
   }
 
@@ -334,6 +318,7 @@ async function handleSave(btn, id, taskElement) {
 
     btn.innerHTML = `<i class="fa fa-edit"></i>`;
     btn.onclick = handleEdit;
+    fetchTasks(currentFilter, priorityFilter);
   } catch (error) {
     console.log("Error saving task:", error);
   }

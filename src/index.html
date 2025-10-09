@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Todo App</title>
+    <link rel="icon" type="image/x-icon" href="./assets/icons/icon.svg" />
     <link rel="stylesheet" href="./scss/styles.scss" />
     <link
       rel="stylesheet"
@@ -12,29 +13,32 @@
   </head>
   <body>
     <div class="todo-wrapper container-md mx-auto my-2 p-4 rounded shadow-lg">
-      <h1 class="text-center fw-bold mb-4">My Tasks</h1>
+      <div class="heading-wrapper">
+        <img src="./assets/icons/icon.svg" class="todo-icon" />
+        <h1 class="text-center fw-bold">My Tasks</h1>
+      </div>
 
       <div class="add-task-section mb-4">
         <div class="d-flex flex-column flex-sm-row gap-2 align-items-center">
           <input
             type="text"
-            id="task-input"
+            id="taskInput"
             class="form-control task-input flex-grow-1"
             placeholder="Enter Task"
           />
           <input
             type="text"
-            id="tags-input"
+            id="tagsInput"
             class="form-control task-input flex-grow-1"
             placeholder="Include tags"
           />
-          <select id="priority-select" class="form-select priority-select">
+          <select id="prioritySelect" class="form-select priority-select">
             <option value="low">Low Priority</option>
             <option value="medium">Medium Priority</option>
             <option value="high">High Priority</option>
           </select>
 
-          <button id="add-task" class="btn btn-success btn-add">Add</button>
+          <button id="addTask" class="btn btn-success btn-add">Add</button>
         </div>
       </div>
 
@@ -43,18 +47,18 @@
       >
         <input
           type="text"
-          id="search-input"
+          id="searchInput"
           class="form-control w-100 w-md-50 search-input"
           placeholder="🔍 Search your tasks..."
         />
-        <div class="btn-group filter-buttons completed-btns">
-          <button class="btn btn-outline-secondary active" id="filter-all">
+        <div class="btn-group filter-buttons completed-btns d-flex flex-nowrap">
+          <button class="btn btn-outline-secondary active" id="filterAll">
             All
           </button>
-          <button class="btn btn-outline-secondary" id="filter-pending">
+          <button class="btn btn-outline-secondary" id="filterPending">
             Pending
           </button>
-          <button class="btn btn-outline-secondary" id="filter-completed">
+          <button class="btn btn-outline-secondary" id="filterCompleted">
             Completed
           </button>
         </div>
@@ -62,7 +66,7 @@
 
       <div class="progress rounded-pill mb-4">
         <div
-          id="progress-bar"
+          id="progressBar"
           class="progress-bar bg-success"
           role="progressbar"
           style="width: 0%"
@@ -76,49 +80,49 @@
       >
         <h4 class="fw-semibold mb-3">Tasks</h4>
 
-        <button class="btn btn-outline-danger" id="clear-all-tasks">
+        <button class="btn btn-outline-danger" id="clearAllTasks">
           Clear All
         </button>
       </div>
       <div
         class="container filter-buttons search-filter d-flex justify-content-center"
       >
-        <div class="row-cols-10 g-0 priority-filter">
+        <div class="row-cols-10 g-0 priority-filter d-flex flex-nowrap">
           <button
             class="btn priority-btn btn-filter-all m-0 active"
-            id="priority-filter-all"
+            id="priorityFilterAll"
           >
             All
           </button>
           <button
             class="btn priority-btn btn-filter-low m-0"
-            id="priority-filter-low"
+            id="priorityFilterLow"
           >
             Low
           </button>
           <button
             class="btn priority-btn btn-filter-medium m-0"
-            id="priority-filter-medium"
+            id="priorityFilterMedium"
           >
             Medium
           </button>
           <button
             class="btn priority-btn btn-filter-high m-0"
-            id="priority-filter-high"
+            id="priorityFilterHigh"
           >
             High
           </button>
         </div>
       </div>
 
-      <div id="task-outer-div" class="task-list"></div>
+      <div id="taskOuterDiv" class="task-list"></div>
 
       <div class="text-center mt-3">
         <span class="badge bg-success me-2"
-          >Completed: <span id="completed-counter">0</span></span
+          >Completed: <span id="completedCounter">0</span></span
         >
         <span class="badge bg-warning text-dark"
-          >Pending: <span id="uncompleted-counter">0</span></span
+          >Pending: <span id="uncompletedCounter">0</span></span
         >
       </div>
     </div>
@@ -141,7 +145,9 @@
               aria-label="Close"
             ></button>
           </div>
-          <div class="modal-body">Please enter a valid task.</div>
+          <div class="modal-body">
+            Please enter a valid task. Task should be of 3 or more characters.
+          </div>
           <div class="modal-footer">
             <button
               type="button"
