@@ -19,9 +19,9 @@ const clearAllButton = document.getElementById("clear-all-tasks");
 const prioritySelect = document.getElementById("priority-select");
 const filterAllButton = document.getElementById("filter-all");
 const filterAllPriorityButton = document.getElementById("priority-filter-all");
-const filterLowButton = document.getElementById("filter-low");
-const filterMediumButton = document.getElementById("filter-medium");
-const filterHighButton = document.getElementById("filter-high");
+const filterLowButton = document.getElementById("priority-filter-low");
+const filterMediumButton = document.getElementById("priority-filter-medium");
+const filterHighButton = document.getElementById("priority-filter-high");
 const filterPendingButton = document.getElementById("filter-pending");
 const filterCompletedButton = document.getElementById("filter-completed");
 const progressBar = document.getElementById("progress-bar");
@@ -76,10 +76,12 @@ filterBtnContainer.addEventListener("click", (event) => {
 });
 
 priorityFtrBtnContainer.addEventListener("click", (event) => {
-  const clickedButton = event.target.closest("button");
+  const clickedButton = event.target.closest(".priority-btn");
 
   if (clickedButton) {
-    const currentActive = priorityFtrBtnContainer.querySelector(".active");
+    const currentActive = priorityFtrBtnContainer.querySelector(
+      ".priority-btn.active"
+    );
 
     if (currentActive) {
       currentActive.classList.remove("active");
@@ -141,10 +143,12 @@ async function handleAddTask() {
 }
 
 async function handleCheckbox(e) {
+  console.log(tasks);
   if (!e.target.classList.contains("input-check")) return;
 
   const id = e.target.dataset.id;
-  const task = tasks.find((t) => t.id === id);
+  console.log(id);
+  const task = tasks.find((t) => t._id === id);
   if (!task) return;
 
   task.isCompleted = e.target.checked;
@@ -155,7 +159,7 @@ async function handleCheckbox(e) {
     body: JSON.stringify({ isCompleted: task.isCompleted }),
   });
 
-  fetchTasks(currentFilter, priorityFilter);
+  await fetchTasks(currentFilter, priorityFilter);
 }
 
 async function handleDelete(e) {
@@ -164,7 +168,7 @@ async function handleDelete(e) {
   console.log(e.currentTarget.dataset);
   console.log(id);
   await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-  tasks = tasks.filter((t) => t.id !== id);
+  tasks = tasks.filter((t) => t._id !== id);
   fetchTasks(currentFilter, priorityFilter);
 }
 
@@ -188,12 +192,12 @@ function renderTasks(tasksToRender) {
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center">
           <div class="d-flex align-items-center">
             <input type="checkbox" class="input-check me-3" data-id="${
-              task.id
+              task._id
             }" ${task.isCompleted ? "checked" : ""}>
             <div class="flex-column">
               <p class="task-name ${
                 task.isCompleted ? "completed" : ""
-              }" data-id="${task.id}">${task.title}</p>
+              }" data-id="${task._id}">${task.title}</p>
               <p class="text-muted mb-0" style="font-style: italic;">Created: ${new Date(
                 task.createdAt
               ).toLocaleString()}</p>
@@ -235,44 +239,19 @@ function renderTasks(tasksToRender) {
     .querySelectorAll(".btn-edit")
     .forEach((btn) => btn.addEventListener("click", handleEdit));
 
-  updateCounters();
+  updateCounters(tasksToRender);
 }
 
-// function displayTasks() {
-//   let filtered = tasks;
-
-//   if (currentFilter === "pending") {
-//     filtered = filtered.filter((t) => !t.isCompleted);
-//   } else if (currentFilter === "completed") {
-//     filtered = filtered.filter((t) => t.isCompleted);
-//   }
-
-//   if (priorityFilter !== "all") {
-//     filtered = filtered.filter(
-//       (t) => t.priority.toLowerCase() === priorityFilter
-//     );
-//   }
-
-//   const searchTerm = searchInput.value.toLowerCase().trim();
-//   if (searchTerm) {
-//     filtered = filtered.filter((t) =>
-//       t.title.toLowerCase().includes(searchTerm)
-//     );
-//   }
-
-//   renderTasks(filtered);
-// }
-
-function updateCounters() {
-  const completed = tasks.filter((t) => t.isCompleted).length;
+function updateCounters(data = tasks) {
+  const completed = data.filter((t) => t.isCompleted).length;
   completedCounter.textContent = completed;
-  uncompletedCounter.textContent = tasks.length - completed;
-  const progress = tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
+  uncompletedCounter.textContent = data.length - completed;
+
+  const progress = data.length > 0 ? (completed / data.length) * 100 : 0;
   progressBar.style.width = `${progress}%`;
   progressBar.setAttribute("aria-valuenow", progress);
 }
-
-function handleEdit(e) {
+async function handleEdit(e) {
   const id = e.currentTarget.dataset.id;
   const taskElement = document.querySelector(`.col.task-div[data-id="${id}"]`);
 
@@ -282,7 +261,7 @@ function handleEdit(e) {
 
   const priorityTagEl = taskElement.querySelector(".priority-display");
   if (priorityTagEl) {
-    const currentPriority = priorityTagEl.textContent;
+    const currentPriority = priorityTagEl.textContent.toLowerCase();
     const prioritySelectHtml = `
       <select class="form-select form-select-sm ms-2 editable-priority-select">
         <option value="high" ${
@@ -321,7 +300,10 @@ async function handleSave(btn, id, taskElement) {
   const newTagsValue = taskElement.querySelector(".editable-tags-input").value;
 
   const newTags = newTagsValue
-    ? newTagsValue.split(/[\s,]+/).map((tag) => tag.trim().toLowerCase())
+    ? newTagsValue
+        .split(/[\s,]+/)
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag.length > 0)
     : [];
 
   if (!newTitle) {
@@ -329,20 +311,30 @@ async function handleSave(btn, id, taskElement) {
     return;
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      title: newTitle,
-      priority: newPriority,
-      tags: newTags,
-    }),
-  });
+  try {
+    const res = await fetch(`${API_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: newTitle,
+        priority: newPriority,
+        tags: newTags,
+      }),
+    });
 
-  const updatedTask = await res.json();
-  tasks = tasks.map((t) => (t.id === id ? updatedTask : t));
+    if (!res.ok) {
+      throw new Error(`Failed to update task: ${res.status}`);
+    }
 
-  btn.innerHTML = `<i class="fa fa-edit"></i>`;
-  btn.onclick = handleEdit;
-  fetchTasks(currentFilter, priorityFilter);
+    const updatedTask = await res.json();
+
+    tasks = tasks.map((t) => (t._id === id ? updatedTask : t));
+
+    renderTasks(tasks);
+
+    btn.innerHTML = `<i class="fa fa-edit"></i>`;
+    btn.onclick = handleEdit;
+  } catch (error) {
+    console.log("Error saving task:", error);
+  }
 }
