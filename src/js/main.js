@@ -4,7 +4,18 @@ import Subscriptions from "./subscriptions.js";
 
 const sub = new Subscriptions();
 
-const API_URL = "http://localhost:3000/tasks";
+const base_URL = "http://localhost:3000";
+const API_URL = base_URL.concat("/tasks");
+const LOGIN_URL = "http://localhost:8080".concat("/login");
+const SIGNUP_URL = "http://localhost:8080".concat("/signup");
+
+if (window.location.href === LOGIN_URL) {
+  window.location.href = "../pages/login.html";
+}
+
+if (window.location.href === SIGNUP_URL) {
+  window.location.href = "../pages/signup.html";
+}
 
 let tasks = [];
 let currentFilter = "all";
@@ -230,7 +241,7 @@ function renderTasks(tasksToRender) {
 function updateCounters(data = tasks) {
   const completed = data.filter((t) => t.isCompleted).length;
   sub.completedCounter.textContent = completed;
-  sub.completedCounter.textContent = data.length - completed;
+  sub.uncompletedCounter.textContent = data.length - completed;
 
   const progress = data.length > 0 ? (completed / data.length) * 100 : 0;
   sub.progressBar.style.width = `${progress}%`;
@@ -298,7 +309,10 @@ async function handleSave(btn, id, taskElement) {
   try {
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
       body: JSON.stringify({
         title: newTitle,
         priority: newPriority,
